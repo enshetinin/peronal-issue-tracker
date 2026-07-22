@@ -1,20 +1,27 @@
-fn build_welcome_message(project_name: &str) -> String {
-    format!("Project {project_name} prepared to start")
-}
+use peronal_issue_tracker::ticket::{Priority, Ticket, TicketStatus};
+
 fn main() {
-    let project_name = "Personal Issue Tracker";
-    let message = build_welcome_message(project_name);
+    let mut ticket = Ticket::new(
+        1,
+        String::from("Implement authentication"),
+        String::from("Make all project private for only authenticated users"),
+        Priority::High,
+    );
 
-    println!("{message}");
-}
+    println!(
+        "Ticket #{}: {}\nDescription: {}\nState: {:?}\nPriority: {:?}",
+        ticket.id(),
+        ticket.title(),
+        ticket.description(),
+        ticket.status(),
+        ticket.priority(),
+    );
 
-#[cfg(test)]
-mod tests {
-    use super::build_welcome_message;
-
-    #[test]
-    fn build_welcome_message_witch_project_name() {
-        let message = build_welcome_message("Cool");
-        assert_eq!(message, "Project Cool prepared to start");
-    }
+    ticket.move_to(TicketStatus::InProgress);
+    println!(
+        "Change state off #{}: {} to {:?}",
+        ticket.id(),
+        ticket.title(),
+        ticket.status()
+    );
 }
