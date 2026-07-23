@@ -144,11 +144,7 @@ impl Ticket {
     }
 
     pub fn take_assignee(&mut self) -> Option<UserId> {
-        if let Some(assigned) = self.assigned_to.take() {
-            Some(assigned)
-        } else {
-            None
-        }
+        self.assigned_to.take()
     }
 }
 
