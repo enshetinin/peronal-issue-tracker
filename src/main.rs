@@ -17,11 +17,8 @@ fn main() {
         ticket.priority(),
     );
 
-    ticket.move_to(TicketStatus::InProgress);
-    println!(
-        "Change state off #{}: {} to {:?}",
-        ticket.id(),
-        ticket.title(),
-        ticket.status()
-    );
+    match ticket.move_to(TicketStatus::Todo) {
+        Ok(()) => println!("Ticket #{}: done", ticket.id()),
+        Err(error) => eprintln!("{:?}", error),
+    }
 }
