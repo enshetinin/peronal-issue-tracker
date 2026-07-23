@@ -1,3 +1,5 @@
+use crate::ids::{ProjectId, TicketId};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TicketStatus {
     Backlog,
@@ -16,6 +18,7 @@ pub enum Priority {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TicketError {
+    EmptyTitle,
     InvalidStatusTransition {
         from: TicketStatus,
         to: TicketStatus,
@@ -24,7 +27,8 @@ pub enum TicketError {
 
 #[derive(Debug)]
 pub struct Ticket {
-    id: u64,
+    id: TicketId,
+    project_id: ProjectId,
     title: String,
     description: String,
     status: TicketStatus,
@@ -32,9 +36,16 @@ pub struct Ticket {
 }
 
 impl Ticket {
-    pub fn new(id: u64, title: String, description: String, priority: Priority) -> Self {
+    pub fn new(
+        id: TicketId,
+        project_id: ProjectId,
+        title: String,
+        description: String,
+        priority: Priority,
+    ) -> Self {
         Self {
             id,
+            project_id,
             title,
             description,
             status: TicketStatus::Backlog,
@@ -42,8 +53,12 @@ impl Ticket {
         }
     }
 
-    pub fn id(&self) -> u64 {
+    pub fn id(&self) -> TicketId {
         self.id
+    }
+
+    pub fn project_id(&self) -> ProjectId {
+        self.project_id
     }
 
     pub fn title(&self) -> &str {
@@ -78,6 +93,15 @@ impl Ticket {
         self.priority = new_priority;
     }
 
+    pub fn change_title(&mut self, new_title: String) -> Result<(), TicketError> {
+        if new_title.trim().is_empty() {
+            return Err(TicketError::EmptyTitle);
+        }
+
+        self.title = new_title;
+        Ok(())
+    }
+
     pub fn is_completed(&self) -> bool {
         self.status == TicketStatus::Done
     }
@@ -98,14 +122,38 @@ impl Ticket {
 #[cfg(test)]
 mod tests {
     use super::{Priority, Ticket, TicketError, TicketStatus};
+    use crate::ids::{ProjectId, TicketId};
 
     fn test_ticket() -> Ticket {
         Ticket::new(
-            1,
+            TicketId::new(1),
+            ProjectId::new(13),
             String::from("Test title"),
             String::from("Test description"),
             Priority::Medium,
         )
+    }
+
+    #[test]
+    fn test_ticket_has_id_and_project_id() {
+        let ticket = test_ticket();
+        assert_eq!(ticket.project_id(), ProjectId::new(13));
+        assert_eq!(ticket.id, TicketId::new(1));
+    }
+
+    #[test]
+    fn change_title_updates_the_ticket() {
+        let mut ticket = test_ticket();
+        let result = ticket.change_title(String::from("Test title"));
+        assert_eq!(result, Ok(()));
+        assert_eq!(ticket.title(), "Test title");
+    }
+
+    #[test]
+    fn empty_title_is_rejected() {
+        let mut ticket = test_ticket();
+        let result = ticket.change_title(String::from("   "));
+        assert_eq!(result, Err(TicketError::EmptyTitle));
     }
 
     #[test]
