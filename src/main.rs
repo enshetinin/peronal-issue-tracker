@@ -10,18 +10,23 @@ fn main() {
         Priority::High,
     );
 
-    println!(
-        "Ticket #{}: {} of project: #{}\nDescription: {}\nState: {:?}\nPriority: {:?}",
-        ticket.id().get(),
-        ticket.title(),
-        ticket.project_id().get(),
-        ticket.description(),
-        ticket.status(),
-        ticket.priority(),
-    );
+    print_ticket_assignment(&ticket);
+    ticket.assign_to(UserId::new(13));
+    print_ticket_assignment(&ticket);
 
     match ticket.move_to(TicketStatus::Todo) {
         Ok(()) => println!("Ticket #{}: done", ticket.id().get()),
         Err(error) => eprintln!("{:?}", error),
+    }
+}
+
+fn print_ticket_assignment(ticket: &Ticket) {
+    match ticket.assigned_to() {
+        Some(user_id) => {
+            println!("User #{} assigned to ticket #{}", user_id.get(), ticket.id().get());
+        }
+        None => {
+            println!("No user assigned to ticket #{}", ticket.id().get());
+        }
     }
 }

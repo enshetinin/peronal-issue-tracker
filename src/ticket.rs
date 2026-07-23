@@ -30,6 +30,7 @@ pub struct Ticket {
     id: TicketId,
     project_id: ProjectId,
     created_by: UserId,
+    assigned_to: Option<UserId>,
     title: String,
     description: String,
     status: TicketStatus,
@@ -49,6 +50,7 @@ impl Ticket {
             id,
             project_id,
             created_by,
+            assigned_to: None,
             title,
             description,
             status: TicketStatus::Backlog,
@@ -124,6 +126,30 @@ impl Ticket {
                 | (TicketStatus::Done, TicketStatus::InProgress)
         )
     }
+
+    pub fn assigned_to(&self) -> Option<UserId> {
+        self.assigned_to
+    }
+
+    pub fn assign_to(&mut self, user_id: UserId) {
+        self.assigned_to = Some(user_id);
+    }
+
+    pub fn unassign(&mut self) {
+        self.assigned_to = None;
+    }
+
+    pub fn is_assigned(&self) -> bool {
+        self.assigned_to.is_some()
+    }
+
+    pub fn take_assignee(&mut self) -> Option<UserId> {
+        if let Some(assigned) = self.assigned_to.take() {
+            Some(assigned)
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -146,6 +172,31 @@ mod tests {
     fn ticket_created_by() {
         let ticket = test_ticket();
         assert_eq!(ticket.created_by(), UserId::new(1));
+    }
+
+    #[test]
+    fn assign_user_id_to_ticket() {
+        let mut ticket = test_ticket();
+        ticket.assign_to(UserId::new(25));
+        assert_eq!(ticket.assigned_to(), Some(UserId::new(25)));
+        assert!(ticket.is_assigned());
+    }
+
+    #[test]
+    fn assign_replace_prev_assign() {
+        let mut ticket = test_ticket();
+        ticket.assign_to(UserId::new(25));
+        ticket.assign_to(UserId::new(13));
+        assert_eq!(ticket.assigned_to(), Some(UserId::new(13)));
+    }
+
+    #[test]
+    fn unassign_ticket_removes_user() {
+        let mut ticket = test_ticket();
+        ticket.assign_to(UserId::new(25));
+        ticket.unassign();
+        assert_eq!(ticket.assigned_to(), None);
+        assert!(!ticket.is_assigned());
     }
 
     #[test]
