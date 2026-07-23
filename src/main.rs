@@ -1,9 +1,10 @@
 use peronal_issue_tracker::ticket::{Priority, Ticket, TicketStatus};
-use peronal_issue_tracker::ids::{TicketId, ProjectId};
+use peronal_issue_tracker::ids::{TicketId, ProjectId, UserId};
 fn main() {
     let mut ticket = Ticket::new(
         TicketId::new(1),
         ProjectId::new(13),
+        UserId::new(13),
         String::from("Implement authentication"),
         String::from("Make all project private for only authenticated users"),
         Priority::High,

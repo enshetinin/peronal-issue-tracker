@@ -1,4 +1,4 @@
-use crate::ids::{ProjectId, TicketId};
+use crate::ids::{ProjectId, TicketId, UserId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TicketStatus {
@@ -29,6 +29,7 @@ pub enum TicketError {
 pub struct Ticket {
     id: TicketId,
     project_id: ProjectId,
+    created_by: UserId,
     title: String,
     description: String,
     status: TicketStatus,
@@ -39,6 +40,7 @@ impl Ticket {
     pub fn new(
         id: TicketId,
         project_id: ProjectId,
+        created_by: UserId,
         title: String,
         description: String,
         priority: Priority,
@@ -46,6 +48,7 @@ impl Ticket {
         Self {
             id,
             project_id,
+            created_by,
             title,
             description,
             status: TicketStatus::Backlog,
@@ -75,6 +78,10 @@ impl Ticket {
 
     pub fn priority(&self) -> Priority {
         self.priority
+    }
+
+    pub fn created_by(&self) -> UserId {
+        self.created_by
     }
 
     pub fn move_to(&mut self, new_status: TicketStatus) -> Result<(), TicketError> {
@@ -122,16 +129,23 @@ impl Ticket {
 #[cfg(test)]
 mod tests {
     use super::{Priority, Ticket, TicketError, TicketStatus};
-    use crate::ids::{ProjectId, TicketId};
+    use crate::ids::{ProjectId, TicketId, UserId};
 
     fn test_ticket() -> Ticket {
         Ticket::new(
             TicketId::new(1),
             ProjectId::new(13),
+            UserId::new(1),
             String::from("Test title"),
             String::from("Test description"),
             Priority::Medium,
         )
+    }
+
+    #[test]
+    fn ticket_created_by() {
+        let ticket = test_ticket();
+        assert_eq!(ticket.created_by(), UserId::new(1));
     }
 
     #[test]

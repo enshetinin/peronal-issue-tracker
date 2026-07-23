@@ -24,9 +24,22 @@ impl ProjectId {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UserId(u64);
+
+impl UserId {
+    pub fn new(value: u64) -> UserId {
+        Self(value)
+    }
+
+    pub fn get(self) -> u64 {
+        self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ProjectId, TicketId};
+    use super::{ProjectId, TicketId, UserId};
 
     #[test]
     fn ticket_id_exposes_its_numeric_value() {
@@ -38,6 +51,12 @@ mod tests {
     fn project_id_exposes_its_numeric_value() {
         let id = ProjectId::new(13);
         assert_eq!(id.get(), 13);
+    }
+
+    #[test]
+    fn user_id_exposes_its_numeric_value() {
+        let id = UserId::new(1);
+        assert_eq!(id.get(), 1);
     }
 
     #[test]
