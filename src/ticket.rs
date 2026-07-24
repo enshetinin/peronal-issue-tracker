@@ -131,11 +131,11 @@ impl Ticket {
         self.assigned_to
     }
 
-    pub fn assign_to(&mut self, user_id: UserId) {
+    pub(crate) fn assign_to(&mut self, user_id: UserId) {
         self.assigned_to = Some(user_id);
     }
 
-    pub fn unassign(&mut self) {
+    pub(crate) fn unassign(&mut self) {
         self.assigned_to = None;
     }
 
@@ -143,7 +143,7 @@ impl Ticket {
         self.assigned_to.is_some()
     }
 
-    pub fn take_assignee(&mut self) -> Option<UserId> {
+    pub(crate) fn take_assignee(&mut self) -> Option<UserId> {
         self.assigned_to.take()
     }
 }
