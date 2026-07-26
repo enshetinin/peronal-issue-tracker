@@ -29,7 +29,7 @@ pub enum ProjectError {
     CannotRemoveOwner { user_id: UserId },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Project {
     id: ProjectId,
     name: String,

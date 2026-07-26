@@ -25,7 +25,7 @@ pub enum TicketError {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ticket {
     id: TicketId,
     project_id: ProjectId,

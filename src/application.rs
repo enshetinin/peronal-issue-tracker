@@ -1,6 +1,7 @@
 use crate::{
-    ids::{ProjectId, UserId},
+    ids::{ProjectId, TicketId, UserId},
     project::Project,
+    repository::{ProjectRepository, RepositoryError, TicketRepository},
     ticket::Ticket,
 };
 
@@ -14,6 +15,14 @@ pub enum AssignTicketError {
         project_id: ProjectId,
         user_id: UserId,
     },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssignTicketByIdError {
+    ProjectNotFound { project_id: ProjectId },
+    TicketNotFound { ticket_id: TicketId },
+    AssignmentFailed(AssignTicketError),
+    RepositoryFailed(RepositoryError),
 }
 
 pub fn assign_ticket(
@@ -53,12 +62,51 @@ pub fn unassign_ticket(
     Ok(ticket.take_assignee())
 }
 
+pub fn assign_ticket_by_id<P, T>(
+    project_repository: &P,
+    ticket_repository: &mut T,
+    project_id: ProjectId,
+    ticket_id: TicketId,
+    assignee_id: UserId,
+) -> Result<(), AssignTicketByIdError>
+where
+    P: ProjectRepository,
+    T: TicketRepository,
+{
+    let project = project_repository
+        .find_by_id(project_id)
+        .map_err(AssignTicketByIdError::RepositoryFailed)?
+        .ok_or(AssignTicketByIdError::ProjectNotFound { project_id })?;
+
+    let mut ticket = ticket_repository
+        .find_by_id(ticket_id)
+        .map_err(AssignTicketByIdError::RepositoryFailed)?
+        .ok_or(AssignTicketByIdError::TicketNotFound { ticket_id })?;
+
+    assign_ticket(&project, &mut ticket, assignee_id)
+        .map_err(AssignTicketByIdError::AssignmentFailed)?;
+
+    ticket_repository
+        .save(ticket)
+        .map_err(AssignTicketByIdError::RepositoryFailed)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{assign_ticket, unassign_ticket, AssignTicketError};
+    use super::{
+        AssignTicketByIdError, AssignTicketError, assign_ticket, assign_ticket_by_id,
+        unassign_ticket,
+    };
+
     use crate::{
         ids::{ProjectId, TicketId, UserId},
         project::Project,
+        repository::{
+            InMemoryProjectRepository, InMemoryTicketRepository, ProjectRepository,
+            TicketRepository,
+        },
         ticket::{Priority, Ticket},
     };
 
@@ -93,10 +141,7 @@ mod tests {
         let project = test_project();
         let mut ticket = test_ticket();
 
-        assert_eq!(
-            assign_ticket(&project, &mut ticket, UserId::new(2)),
-            Ok(())
-        );
+        assert_eq!(assign_ticket(&project, &mut ticket, UserId::new(2)), Ok(()));
         assert_eq!(ticket.assigned_to(), Some(UserId::new(2)));
 
         let result = unassign_ticket(&project, &mut ticket);
@@ -169,5 +214,111 @@ mod tests {
         assert_eq!(assign_ticket(&project, &mut ticket, UserId::new(2)), Ok(()));
         assert_eq!(assign_ticket(&project, &mut ticket, UserId::new(3)), Ok(()));
         assert_eq!(ticket.assigned_to(), Some(UserId::new(3)));
+    }
+
+    #[test]
+    fn assigning_ticket_by_id_updates_stored_ticket() {
+        let mut project_repository = InMemoryProjectRepository::new();
+        let mut ticket_repository = InMemoryTicketRepository::new();
+
+        assert_eq!(project_repository.save(test_project()), Ok(()));
+        assert_eq!(ticket_repository.save(test_ticket()), Ok(()));
+
+        let result = assign_ticket_by_id(
+            &project_repository,
+            &mut ticket_repository,
+            ProjectId::new(10),
+            TicketId::new(100),
+            UserId::new(2),
+        );
+
+        assert_eq!(result, Ok(()));
+
+        let stored_ticket = ticket_repository
+            .find_by_id(TicketId::new(100))
+            .expect("the in-memory repository should be available")
+            .expect("the test ticket should exist");
+
+        assert_eq!(stored_ticket.assigned_to(), Some(UserId::new(2)));
+    }
+
+    #[test]
+    fn assigning_ticket_by_id_rejects_missing_project() {
+        let project_repository = InMemoryProjectRepository::new();
+        let mut ticket_repository = InMemoryTicketRepository::new();
+
+        assert_eq!(ticket_repository.save(test_ticket()), Ok(()));
+
+        let result = assign_ticket_by_id(
+            &project_repository,
+            &mut ticket_repository,
+            ProjectId::new(99),
+            TicketId::new(100),
+            UserId::new(2),
+        );
+
+        assert_eq!(
+            result,
+            Err(AssignTicketByIdError::ProjectNotFound {
+                project_id: ProjectId::new(99),
+            })
+        );
+    }
+
+    #[test]
+    fn assigning_ticket_by_id_rejects_missing_ticket() {
+        let mut project_repository = InMemoryProjectRepository::new();
+        let mut ticket_repository = InMemoryTicketRepository::new();
+
+        assert_eq!(project_repository.save(test_project()), Ok(()));
+
+        let result = assign_ticket_by_id(
+            &project_repository,
+            &mut ticket_repository,
+            ProjectId::new(10),
+            TicketId::new(999),
+            UserId::new(2),
+        );
+
+        assert_eq!(
+            result,
+            Err(AssignTicketByIdError::TicketNotFound {
+                ticket_id: TicketId::new(999),
+            })
+        );
+    }
+
+    #[test]
+    fn rejected_assignment_does_not_update_stored_ticket() {
+        let mut project_repository = InMemoryProjectRepository::new();
+        let mut ticket_repository = InMemoryTicketRepository::new();
+
+        assert_eq!(project_repository.save(test_project()), Ok(()));
+        assert_eq!(ticket_repository.save(test_ticket()), Ok(()));
+
+        let result = assign_ticket_by_id(
+            &project_repository,
+            &mut ticket_repository,
+            ProjectId::new(10),
+            TicketId::new(100),
+            UserId::new(99),
+        );
+
+        assert_eq!(
+            result,
+            Err(AssignTicketByIdError::AssignmentFailed(
+                AssignTicketError::AssigneeIsNotProjectMember {
+                    project_id: ProjectId::new(10),
+                    user_id: UserId::new(99),
+                }
+            ))
+        );
+
+        let stored_ticket = ticket_repository
+            .find_by_id(TicketId::new(100))
+            .expect("the in-memory repository should be available")
+            .expect("the test ticket should exist");
+
+        assert_eq!(stored_ticket.assigned_to(), None);
     }
 }
