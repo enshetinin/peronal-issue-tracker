@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ids::TicketId;
-use crate::{
-    ids::{ProjectId},
-    project::Project,
-    ticket::Ticket,
-};
+use crate::{ids::ProjectId, project::Project, ticket::Ticket};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RepositoryError {
