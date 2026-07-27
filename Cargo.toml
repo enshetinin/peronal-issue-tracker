@@ -1,6 +1,13 @@
-[package]
-name = "peronal-issue-tracker"
+[workspace]
+members = [
+    "crates/domain",
+    "crates/application",
+    "crates/infrastructure",
+    "crates/cli",
+]
+resolver = "3"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
-
-[dependencies]
+license = "MIT"

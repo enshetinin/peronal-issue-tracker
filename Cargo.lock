@@ -3,5 +3,29 @@
 version = 4
 
 [[package]]
-name = "peronal-issue-tracker"
+name = "pit-application"
 version = "0.1.0"
+dependencies = [
+ "pit-domain",
+]
+
+[[package]]
+name = "pit-cli"
+version = "0.1.0"
+dependencies = [
+ "pit-application",
+ "pit-domain",
+ "pit-infrastructure",
+]
+
+[[package]]
+name = "pit-domain"
+version = "0.1.0"
+
+[[package]]
+name = "pit-infrastructure"
+version = "0.1.0"
+dependencies = [
+ "pit-application",
+ "pit-domain",
+]

@@ -1,0 +1,10 @@
+[package]
+name = "pit-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+pit-application = { path = "../application" }
+pit-domain = { path = "../domain" }
+pit-infrastructure = { path = "../infrastructure" }
