@@ -7,6 +7,12 @@ license.workspace = true
 [dependencies]
 axum.workspace = true
 tokio.workspace = true
+serde.workspace = true
+
+pit-application = { path = "../application" }
+pit-domain = { path = "../domain" }
+pit-infrastructure = { path = "../infrastructure" }
 
 [dev-dependencies]
 tower.workspace = true
+serde_json.workspace = true
